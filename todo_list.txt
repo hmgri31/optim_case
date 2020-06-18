@@ -1,0 +1,20 @@
+Comments from Post-presentation Skype with Pippelaers:
+	General Comments: 
+		- Motion planning using the bicycle model is fine. 
+	Improvements:
+		- Obviously make it work with a moving obstacle for it to be complicated enough. 
+		- Fix the oscillatory behaviour of the control inputs
+			- This can be done by implementing a penalty on control in the cost function. 
+		- Be critical on the effects of initialisation (i.e. perform tests with and without initialisation)
+		- Implement the MPC such that the output of one solution is the initialisation to the next solution. 
+		- Account for the trajectories of other objects by predicting their trajectories. 
+		- Perform a critical analysis of the results through both numerics and applications. 
+			- i.e. time how quickly everything solves based on different criteria. 
+
+Questions I remember from the presentation:
+    - How would you address the problem that the cars are represented by ellipses and this is not the case in real life?
+    - How can you address the movement of another object.
+
+My own ideas for improvements other than the ones above: 
+	- Account for the solver not solving in real time by some delay in input. 
+	
