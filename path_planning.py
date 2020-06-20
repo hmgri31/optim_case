@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from casadi import *
 
-# Bicycle model
+#%% Definition of Car Length and Initial Conditions
+
 L = 1.5 #Define what the length of the car is, as this will affect the turning circle.
 
 # Define the vector that will describe the current state of the system in the simulation
@@ -13,11 +14,15 @@ Tf = 5 #Control horizon [s]
 Nhor = 40 #number of control intervals
 dt = Tf/Nhor #sample time
 
+#%% Define inital conditions
+
 current_X = vertcat(0,0,0,0,0) # x,y,theta,v,delta
 final_X = vertcat(10,10,pi/2,0,0) # x,y,theta,v,delta
 
 path_length_new = vertcat(0) #Initialise the path length parameter to be zero
 
+
+#%% Define the simulation length and define empty arrays
 Nsim = int(5*Tf/dt) #How many simulation steps to run, keep in mind that this should be determined by dt.
 add_noise = False
 add_disturbance = False
@@ -35,38 +40,41 @@ ddelta_history = np.zeros(Nsim)
 p0_xhistory = np.zeros(Nsim+1)
 p0_yhistory = np.zeros(Nsim+1)
 
-# Set up optimal control problem
+#%% Define format of the optimal control problem
+
 ocp = Ocp(T = FreeTime(3))
 
-# Define the states in a 2-dimensional plane
+#%% Define the states in a 2-dimensional plane
 x = ocp.state()
 y = ocp.state()
 theta = ocp.state()
 v = ocp.state()
 delta = ocp.state()
 
-#Define the two control variables.
+
+#%% Define the two control variables.
 ddelta = ocp.control(order = 0)
 a = ocp.control(order = 0)
 
 # Define parameter
 X_0 = ocp.parameter(nx)
 
+#%% Path length parameter
 ## Define a parameter for the total path length
 #path_length = ocp.parameter(1)
 
-# Specify ODE
+
+#%% Specify ODE's
 ocp.set_der(x, v*cos(theta))
 ocp.set_der(y, v*sin(theta))
 ocp.set_der(theta, v*(tan(delta)/L))
 ocp.set_der(v,a)
 ocp.set_der(delta,ddelta)
 
-# Minimal time objective, with a path constraint objective (for now)
+#%% Minimal time objective, with a path constraint objective (for now)
 ocp.add_objective(ocp.T) #objective purely focused on time
-#ocp.add_objective(ocp.integral(a**2 + x**2 + y**2)) #objective using states
 
-# Path contraints on speed and angle change (no sharp angles and no high speeds)
+#%% Specify constraints
 ocp.subject_to(-3 <= v)
 ocp.subject_to(v <= 3)
 ocp.subject_to(-(pi/4) <= delta)
@@ -77,20 +85,20 @@ ocp.subject_to(-(pi/6) <= ddelta)
 ocp.subject_to(ddelta <= (pi/6))
 ocp.subject_to(0 <= ocp.T)
 
-# Set state bounds
+#%% Specify state bounds
 ocp.subject_to(-2 <= x)
 ocp.subject_to(x <= 15)
 ocp.subject_to(-2 <= y)
 ocp.subject_to(y <= 15)
 
-# Initial constraints
+#%% Initial constraints
 X = vertcat(x,y,theta,v,delta)
 ocp.subject_to(ocp.at_t0(X)==X_0) #Starting x position
 
-# Final constraint
+#%% Final constraint
 ocp.subject_to(ocp.at_tf(X)==final_X)
 
-# Add a stationary round obstacle and a constraint on it not touching the obstacle
+#%% Add an object and an object constraint
 p0 = vertcat(6,6) #This marks the centerpoint of the obstacle.
 r0 = 0.5 #This marks the radius of the obstacle that you are trying to avoid.
 angle = -(pi/6) #This marks the straight line the obstacle will move along
@@ -106,16 +114,16 @@ ocp.subject_to(sumsqr(p-p0)>=1.2*(r0**2)) #sumsqr calculates the sum of squares 
 ocp.subject_to(sumsqr(p-p1)>=1.2*(r1**2))
 ocp.subject_to(sumsqr(p-p2)>=1.2*(r2**2))
 
-# Pick a solution method
+#%% Specify a solution method
 options = {"ipopt": {"print_level": 0}}
 options["expand"] = True #using expand makes the solver faster
 options["print_time"] = False
 ocp.solver('ipopt', options)
 
-# Concretely specify the method
+#Concretely specify the method
 ocp.method(MultipleShooting(N=Nhor, M=1, intg='rk'))
 
-#ocp.set_initial sets initial guesses for the solver to utilise
+#%% ocp.set_initial sets initial guesses for the solver to utilise
 ocp.set_initial(x,0)
 ocp.set_initial(y,ocp.t)
 ocp.set_initial(theta, pi/2)
