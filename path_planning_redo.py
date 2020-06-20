@@ -74,9 +74,9 @@ ocp.subject_to(-pi/6 <= (delta <= pi/6))
 
 # Objective functions
 ocp.add_objective(sumsqr(ocp.T))
-#ocp.add_objective(sumsqr(a))
-#ocp.add_objective(sumsqr(delta))
-#ocp.add_objective(-sumsqr(v))
+ocp.add_objective(ocp.sum(sumsqr(a),grid='control'))
+ocp.add_objective(ocp.sum(sumsqr(delta),grid='control'))
+ocp.add_objective(-ocp.sum(sumsqr(v),grid='control'))
 
 # Pick a solution method
 options = {"ipopt": {"print_level": 0}}
