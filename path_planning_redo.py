@@ -12,8 +12,8 @@ import numpy as np
 from casadi import *
 
 #%% Setup the problem
-L = 1.5 #Define what the length of the car is, as this will affect the turning circle.
 
+L = 1.5 #Define what the length of the car is, as this will affect the turning circle.
 
 Nsim    = 30            # how much samples to simulate
 nx = 4                  # x, y, v, theta (angle bicycle)
@@ -96,9 +96,16 @@ ocp.set_value(X_0,current_X)
 final_X = vertcat(10,10,0,pi/4)
 ocp.subject_to(ocp.at_tf(X)==final_X)
 
-#%% Solve the problem
+#%% Solve the problem and extract the solution
 sol = ocp.solve()
 
+# Extract solutions from the optimisation problem
+t_sol, x_sol = sol.sample(x, grid='control')
+t_sol, y_sol = sol.sample(x, grid='control')
+t_sol, v_sol = sol.sample(x, grid='control')
+t_sol, theta_sol = sol.sample(x, grid='control')
+t_sol, delta_sol = sol.sample(x, grid='control')
+t_sol, a_sol = sol.sample(x, grid='control')
 
 
 
