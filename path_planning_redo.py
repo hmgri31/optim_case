@@ -39,7 +39,6 @@ y     = ocp.state()
 v     = ocp.state()
 theta = ocp.state()
 
-# Define controls
 delta = ocp.control()
 a     = ocp.control()
 
