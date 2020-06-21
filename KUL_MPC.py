@@ -226,122 +226,122 @@ tracking_error[0] = sol.value(ocp.objective)
 # Look at the Constrain Jacobian and the Lagrange Hessian structure
 ocp.spy()
 
-#
-# # -------------------------------
-# # Simulate the MPC solving the OCP (with the updated state) several times
-# # -------------------------------
-#
-# for i in range(Nsim):
-#     print("timestep", i+1, "of", Nsim)
-#
-#     # Combine first control inputs
-#     current_U = vertcat(delta_sol[0], V_sol[0])
-#
-#     # Simulate dynamics (applying the first control input) and update the current state
-#     current_X = Sim_system_dyn(x0=current_X, u=current_U, T=t_sol[1]-t_sol[0])["xf"]
-#
-#     # Set the parameter X0 to the new current_X
-#     ocp.set_value(X_0, current_X)
-#
-#     # Find closest point on the reference path compared witch current position
-#     index_closest_point = find_closest_point(current_X[:2], ref_path, index_closest_point)
-#
-#     # Create a list of N waypoints
-#     current_waypoints = get_current_waypoints(index_closest_point, wp, N, dist=6)
-#
-#     # Set initial value for waypoint parameters
-#     ocp.set_value(waypoints, current_waypoints[:,:-1])
-#     ocp.set_value(waypoint_last, current_waypoints[:,-1])
-#
-#     # Solve the optimization problem
-#     sol = ocp.solve()
-#
-#     # Log data for post-processing
-#     t_sol, x_sol     = sol.sample(x,     grid='control')
-#     t_sol, y_sol     = sol.sample(y,     grid='control')
-#     t_sol, theta_sol = sol.sample(theta, grid='control')
-#     t_sol, delta_sol = sol.sample(delta, grid='control')
-#     t_sol, V_sol     = sol.sample(V,     grid='control')
-#
-#     time_hist[i+1,:]    = t_sol
-#     x_hist[i+1,:]       = x_sol
-#     y_hist[i+1,:]       = y_sol
-#     theta_hist[i+1,:]   = theta_sol
-#     delta_hist[i+1,:]   = delta_sol
-#     V_hist[i+1,:]       = V_sol
-#
-#     tracking_error[i+1] = sol.value(ocp.objective)
-#     print('Tracking error f', tracking_error[i+1])
-#
-#     ocp.set_initial(x, x_sol)
-#     ocp.set_initial(y, y_sol)
-#     ocp.set_initial(theta, theta_sol)
-#     ocp.set_initial(delta, delta_sol)
-#     ocp.set_initial(V, V_sol)
-#
-# # -------------------------------
-# # Plot the results
-# # -------------------------------
-#
-# T_start = 0
-# T_end = sum(time_hist[k,1] - time_hist[k,0] for k in range(Nsim+1))
-#
-# fig = plt.figure()
-#
-# ax2 = plt.subplot(2, 2, 1)
-# ax3 = plt.subplot(2, 2, 2)
-# ax4 = plt.subplot(2, 2, 3)
-# ax5 = plt.subplot(2, 2, 4)
-#
-# ax2.plot(wp[0,:], wp[1,:], 'ko')
-# ax2.set_xlabel('x pos [m]')
-# ax2.set_ylabel('y pos [m]')
-# ax2.set_aspect('equal', 'box')
-#
-# ax3.set_xlabel('T [s]')
-# ax3.set_ylabel('pos [m]')
-# ax3.set_xlim(0,T_end)
-#
-# ax4.axhline(y= pi/6, color='r')
-# ax4.axhline(y=-pi/6, color='r')
-# ax4.set_xlabel('T [s]')
-# ax4.set_ylabel('delta [rad/s]')
-# ax4.set_xlim(0,T_end)
-#
-# ax5.axhline(y=0, color='r')
-# ax5.axhline(y=1, color='r')
-# ax5.set_xlabel('T [s]')
-# ax5.set_ylabel('V [m/s]')
-# ax5.set_xlim(0,T_end)
-#
-# # fig2 = plt.figure()
-# # ax6 = plt.subplot(1,1,1)
-#
-# for k in range(Nsim+1):
-#     # ax6.plot(time_hist[k,:], delta_hist[k,:])
-#     # ax6.axhline(y= pi/6, color='r')
-#     # ax6.axhline(y=-pi/6, color='r')
-#
-#     ax2.plot(x_hist[k,:], y_hist[k,:], 'b-')
-#     ax2.plot(x_hist[k,:], y_hist[k,:], 'g.')
-#     ax2.plot(x_hist[k,0], y_hist[k,0], 'ro', markersize = 10)
-#
-#     ax3.plot(T_start, x_hist[k,0], 'b.')
-#     ax3.plot(T_start, y_hist[k,0], 'r.')
-#
-#     ax4.plot(T_start, delta_hist[k,0], 'b.')
-#     ax5.plot(T_start, V_hist[k,0],     'b.')
-#
-#     T_start = T_start + (time_hist[k,1] - time_hist[k,0])
-#     plt.pause(0.5)
-#
-# ax3.legend(['x pos [m]','y pos [m]'])
-#
-# fig3 = plt.figure()
-# ax1 = plt.subplot(1,1,1)
-# ax1.semilogy(tracking_error)
-# ax1.set_xlabel('N [-]')
-# ax1.set_ylabel('obj f')
-#
-# plt.show(block=True)
+
+# -------------------------------
+# Simulate the MPC solving the OCP (with the updated state) several times
+# -------------------------------
+
+for i in range(Nsim):
+    print("timestep", i+1, "of", Nsim)
+
+    # Combine first control inputs
+    current_U = vertcat(delta_sol[0], V_sol[0])
+
+    # Simulate dynamics (applying the first control input) and update the current state
+    current_X = Sim_system_dyn(x0=current_X, u=current_U, T=t_sol[1]-t_sol[0])["xf"]
+
+    # Set the parameter X0 to the new current_X
+    ocp.set_value(X_0, current_X)
+
+    # Find closest point on the reference path compared witch current position
+    index_closest_point = find_closest_point(current_X[:2], ref_path, index_closest_point)
+
+    # Create a list of N waypoints
+    current_waypoints = get_current_waypoints(index_closest_point, wp, N, dist=6)
+
+    # Set initial value for waypoint parameters
+    ocp.set_value(waypoints, current_waypoints[:,:-1])
+    ocp.set_value(waypoint_last, current_waypoints[:,-1])
+
+    # Solve the optimization problem
+    sol = ocp.solve()
+
+    # Log data for post-processing
+    t_sol, x_sol     = sol.sample(x,     grid='control')
+    t_sol, y_sol     = sol.sample(y,     grid='control')
+    t_sol, theta_sol = sol.sample(theta, grid='control')
+    t_sol, delta_sol = sol.sample(delta, grid='control')
+    t_sol, V_sol     = sol.sample(V,     grid='control')
+
+    time_hist[i+1,:]    = t_sol
+    x_hist[i+1,:]       = x_sol
+    y_hist[i+1,:]       = y_sol
+    theta_hist[i+1,:]   = theta_sol
+    delta_hist[i+1,:]   = delta_sol
+    V_hist[i+1,:]       = V_sol
+
+    tracking_error[i+1] = sol.value(ocp.objective)
+    print('Tracking error f', tracking_error[i+1])
+
+    ocp.set_initial(x, x_sol)
+    ocp.set_initial(y, y_sol)
+    ocp.set_initial(theta, theta_sol)
+    ocp.set_initial(delta, delta_sol)
+    ocp.set_initial(V, V_sol)
+
+# -------------------------------
+# Plot the results
+# -------------------------------
+
+T_start = 0
+T_end = sum(time_hist[k,1] - time_hist[k,0] for k in range(Nsim+1))
+
+fig = plt.figure()
+
+ax2 = plt.subplot(2, 2, 1)
+ax3 = plt.subplot(2, 2, 2)
+ax4 = plt.subplot(2, 2, 3)
+ax5 = plt.subplot(2, 2, 4)
+
+ax2.plot(wp[0,:], wp[1,:], 'ko')
+ax2.set_xlabel('x pos [m]')
+ax2.set_ylabel('y pos [m]')
+ax2.set_aspect('equal', 'box')
+
+ax3.set_xlabel('T [s]')
+ax3.set_ylabel('pos [m]')
+ax3.set_xlim(0,T_end)
+
+ax4.axhline(y= pi/6, color='r')
+ax4.axhline(y=-pi/6, color='r')
+ax4.set_xlabel('T [s]')
+ax4.set_ylabel('delta [rad/s]')
+ax4.set_xlim(0,T_end)
+
+ax5.axhline(y=0, color='r')
+ax5.axhline(y=1, color='r')
+ax5.set_xlabel('T [s]')
+ax5.set_ylabel('V [m/s]')
+ax5.set_xlim(0,T_end)
+
+# fig2 = plt.figure()
+# ax6 = plt.subplot(1,1,1)
+
+for k in range(Nsim+1):
+    # ax6.plot(time_hist[k,:], delta_hist[k,:])
+    # ax6.axhline(y= pi/6, color='r')
+    # ax6.axhline(y=-pi/6, color='r')
+
+    ax2.plot(x_hist[k,:], y_hist[k,:], 'b-')
+    ax2.plot(x_hist[k,:], y_hist[k,:], 'g.')
+    ax2.plot(x_hist[k,0], y_hist[k,0], 'ro', markersize = 10)
+
+    ax3.plot(T_start, x_hist[k,0], 'b.')
+    ax3.plot(T_start, y_hist[k,0], 'r.')
+
+    ax4.plot(T_start, delta_hist[k,0], 'b.')
+    ax5.plot(T_start, V_hist[k,0],     'b.')
+
+    T_start = T_start + (time_hist[k,1] - time_hist[k,0])
+    plt.pause(0.5)
+
+ax3.legend(['x pos [m]','y pos [m]'])
+
+fig3 = plt.figure()
+ax1 = plt.subplot(1,1,1)
+ax1.semilogy(tracking_error)
+ax1.set_xlabel('N [-]')
+ax1.set_ylabel('obj f')
+
+plt.show(block=True)
 
