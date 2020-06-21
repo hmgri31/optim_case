@@ -77,7 +77,7 @@ ocp.subject_to(-pi/6 <= (delta <= pi/6))
 ocp.add_objective(sumsqr(ocp.T))
 ocp.add_objective(ocp.sum(sumsqr(a),grid='control'))
 ocp.add_objective(ocp.sum(sumsqr(delta),grid='control'))
-ocp.add_objective(-ocp.sum(sumsqr(v),grid='control'))
+#ocp.add_objective(-ocp.sum(sumsqr(v),grid='control'))
 
 # Pick a solution method
 options = {"ipopt": {"print_level": 5}}
@@ -106,6 +106,8 @@ t_sol, theta_sol = sol.sample(theta, grid='control')
 t_sol, delta_sol = sol.sample(delta, grid='control')
 t_sol, a_sol = sol.sample(a, grid='control')
 
+obj_function = sol.value(ocp.objective)
+
 #%% Set up the subplots
 
 fig,(ax1,ax2,ax3,ax4,ax5,ax6) = plt.subplots(nrows=6)
@@ -133,6 +135,7 @@ ax5.set_ylabel('a [m/s^2]')
 ax6.plot(t_sol,delta_sol)
 ax6.set_xlabel('t [s]')
 ax6.set_ylabel('delta [rad]')
+ax6.set_ylim(-0.5,0.5)
 
 plt.subplots_adjust(hspace=1)
 #%%
