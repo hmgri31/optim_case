@@ -96,47 +96,45 @@ ocp.set_value(X_0,current_X)
 final_X = vertcat(10,10,0,pi/4)
 ocp.subject_to(ocp.at_tf(X)==final_X)
 
-#%% Solve the problem and extract the solution
+#%% Solve the problem and extract the solution, then plot the outputs over time
 sol = ocp.solve()
 
 # Extract solutions from the optimisation problem
 t_sol, x_sol = sol.sample(x, grid='control')
-t_sol, y_sol = sol.sample(x, grid='control')
-t_sol, v_sol = sol.sample(x, grid='control')
-t_sol, theta_sol = sol.sample(x, grid='control')
-t_sol, delta_sol = sol.sample(x, grid='control')
-t_sol, a_sol = sol.sample(x, grid='control')
+t_sol, y_sol = sol.sample(y, grid='control')
+t_sol, v_sol = sol.sample(v, grid='control')
+t_sol, theta_sol = sol.sample(theta, grid='control')
+t_sol, delta_sol = sol.sample(delta, grid='control')
+t_sol, a_sol = sol.sample(a, grid='control')
 
+#%% Set up the subplots
 
+fig,(ax1,ax2,ax3,ax4,ax5,ax6) = plt.subplots(nrows=6)
 
+ax1.plot(t_sol,x_sol)
+ax1.set_xlabel('t [s]')
+ax1.set_ylabel('x [m]')
 
+ax2.plot(t_sol,y_sol)
+ax2.set_xlabel('t [s]')
+ax2.set_ylabel('y [m]')
 
+ax3.plot(t_sol, v_sol)
+ax3.set_xlabel('t [s]')
+ax3.set_ylabel('v [m/s]')
 
+ax4.plot(t_sol,theta_sol)
+ax4.set_xlabel('t [s]')
+ax4.set_ylabel('theta [rad]')
 
+ax5.plot(t_sol,a_sol)
+ax5.set_xlabel('t [s]')
+ax5.set_ylabel('a [m/s^2]')
 
+ax6.plot(t_sol,delta_sol)
+ax6.set_xlabel('t [s]')
+ax6.set_ylabel('delta [rad]')
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+plt.subplots_adjust(hspace=1)
 #%%
 
