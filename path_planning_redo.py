@@ -11,15 +11,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 from casadi import *
 
+
 #%% Setup the problem
 
 L = 1.5 #Define what the length of the car is, as this will affect the turning circle.
 
-Nsim    = 30            # how much samples to simulate
+Nsim    = 50            # how much samples to simulate
 nx = 4                  # x, y, v, theta (angle bicycle)
 nu = 2                  # a, delta (angle wheel)
 Tf = 5                  # Control horizon [s]
-Nhor = 10              #number of control intervals
+Nhor = 20              #number of control intervals
 dt = Tf/Nhor            #sample time
 
 #Initialise the matrices for logging variables
@@ -73,10 +74,19 @@ ocp.subject_to(-2 <= (y <= 12))
 ocp.subject_to(-10 <= (a <= 10))
 ocp.subject_to(-pi/6 <= (delta <= pi/6))
 
+# Add a stationary objects along the path
+# TODO: clearly the current solution isn't taking into account the obstacle, so fix this
+p0 = vertcat(6,6)
+r0 = 1
+
+p = vertcat(x,y)
+ocp.subject_to(sumsqr(p-p0)>=r0**2)
+
 # Objective functions
+# TODO: tune the weightings of the different objectives
 ocp.add_objective(sumsqr(ocp.T))
-ocp.add_objective(ocp.sum(sumsqr(a),grid='control'))
-ocp.add_objective(ocp.sum(sumsqr(delta),grid='control'))
+ocp.add_objective(ocp.sum(0.5*sumsqr(a),grid='control'))
+ocp.add_objective(ocp.sum(5*sumsqr(delta),grid='control'))
 #ocp.add_objective(-ocp.sum(sumsqr(v),grid='control'))
 
 # Pick a solution method
@@ -110,7 +120,7 @@ obj_function = sol.value(ocp.objective)
 
 #%% Set up the subplots
 
-fig,(ax1,ax2,ax3,ax4,ax5,ax6) = plt.subplots(nrows=6)
+fig1,(ax1,ax2,ax3,ax4,ax5,ax6) = plt.subplots(nrows=6)
 
 ax1.plot(t_sol,x_sol)
 ax1.set_xlabel('t [s]')
@@ -138,5 +148,19 @@ ax6.set_ylabel('delta [rad]')
 ax6.set_ylim(-0.5,0.5)
 
 plt.subplots_adjust(hspace=1)
-#%%
 
+#%% Create an animated plot of the
+
+fig2 = plt.figure()
+ax7 = plt.subplot(1,1,1)
+
+size_array = np.size(x_sol)
+ts = np.linspace(0,2*pi,1000)
+
+ax7.plot(p0[0]+r0*cos(ts),p0[1]+r0*sin(ts),'b')
+
+for k in range(size_array):
+
+    ax7.plot(x_sol,y_sol,'ro', markersize = 10)
+
+ax7.set_aspect('equal',adjustable='box')
