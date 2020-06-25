@@ -27,9 +27,12 @@ dt = Tf/Nhor            #sample time
 time_hist      = np.zeros((Nsim+1, Nhor+1))
 x_hist         = np.zeros((Nsim+1, Nhor+1))
 y_hist         = np.zeros((Nsim+1, Nhor+1))
+v_hist         = np.zeros((Nsim+1, Nhor+1))
 theta_hist     = np.zeros((Nsim+1, Nhor+1))
+a_hist         = np.zeros((Nsim+1, Nhor+1))
 delta_hist     = np.zeros((Nsim+1, Nhor+1))
-V_hist         = np.zeros((Nsim+1, Nhor+1))
+
+
 
 # Define the type of optimal control problem
 ocp = Ocp(T=FreeTime(10.0)) #Freetime problem because otherwise it will reach the destination in the solution time
@@ -67,7 +70,7 @@ ocp.set_initial(a,      0.5)
 ocp.set_initial(delta,  0)
 
 # Path constraints
-ocp.subject_to(0 <= (v <= 10))
+ocp.subject_to(0 <= (v <= 8.33))
 ocp.subject_to(-2 <= (x <= 12))
 ocp.subject_to(-2 <= (y <= 12))
 
@@ -90,7 +93,7 @@ ocp.add_objective(ocp.sum(5*sumsqr(delta),grid='control'))
 #ocp.add_objective(-ocp.sum(sumsqr(v),grid='control'))
 
 # Pick a solution method
-options = {"ipopt": {"print_level": 5}}
+options = {"ipopt": {"print_level": 0}}
 options["expand"] = True
 options["print_time"] = False
 ocp.solver('ipopt', options)
@@ -164,3 +167,61 @@ for k in range(size_array):
     ax7.plot(x_sol,y_sol,'ro', markersize = 10)
 
 ax7.set_aspect('equal',adjustable='box')
+
+#%% Implement the MPC portion of the control
+
+# Get discretised dynamics as CasADi function to simulate the system
+sim_system_dyn = ocp._method.discrete_system(ocp)
+
+# Log the outputs from the first solve, in the first row
+time_hist[0,:]    = t_sol
+x_hist[0,:]       = x_sol
+y_hist[0,:]       = y_sol
+v_hist[0,:]       = v_sol
+theta_hist[0,:]   = theta_sol
+a_hist[0,:]       = a_sol
+delta_hist[0,:]   = delta_sol
+
+for i in range(Nsim):
+    print("timestep", i+1, "of", Nsim)
+
+    # Combine first control inputs
+    current_U = vertcat(delta_sol[0], a_sol[0])
+
+    # Simulate dynamics (applying the first control input) and update the current state
+    current_X = sim_system_dyn(x0=current_X, u=current_U, T=t_sol[1]-t_sol[0])["xf"]
+
+    # Set the parameter X0 to the new current_X
+    ocp.set_value(X_0, current_X)
+
+    # Solve the optimization problem
+    sol = ocp.solve()
+
+    # Log data for post-processing
+    t_sol, x_sol     = sol.sample(x,     grid='control')
+    t_sol, y_sol     = sol.sample(y,     grid='control')
+    t_sol, v_sol     = sol.sample(v,     grid='control')
+    t_sol, theta_sol = sol.sample(theta, grid='control')
+    t_sol, delta_sol = sol.sample(delta, grid='control')
+    t_sol, a_sol     = sol.sample(a,     grid='control')
+
+    # TODO: The isn't upgrading to the absolute time at the moment, just the relative time
+    time_hist[i+1,:]    = t_sol
+    x_hist[i+1,:]       = x_sol
+    y_hist[i+1,:]       = y_sol
+    v_hist[i+1,:]       = v_sol
+    theta_hist[i+1,:]   = theta_sol
+    delta_hist[i+1,:]   = delta_sol
+    a_hist[i+1,:]       = a_sol
+
+    #The previous solution makes a good initial guess for the next iteration, so put that here
+    ocp.set_initial(x, x_sol)
+    ocp.set_initial(y, y_sol)
+    ocp.set_initial(v, v_sol)
+    ocp.set_initial(theta, theta_sol)
+    ocp.set_initial(delta, delta_sol)
+    ocp.set_initial(a, a_sol)
+
+
+
+
