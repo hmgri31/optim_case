@@ -32,7 +32,9 @@ theta_hist     = np.zeros((Nsim+1, Nhor+1))
 a_hist         = np.zeros((Nsim+1, Nhor+1))
 delta_hist     = np.zeros((Nsim+1, Nhor+1))
 
+p_hist = np.zeros((Nsim+1, 2))
 
+#Initialise a matrix for plotting the position of the moving object
 
 # Define the type of optimal control problem
 ocp = Ocp(T=FreeTime(10.0)) #Freetime problem because otherwise it will reach the destination in the solution time
@@ -85,6 +87,12 @@ r0 = 1
 p = vertcat(x,y)
 ocp.subject_to(sumsqr(p-p0)>=r0**2)
 
+# Now input a moving obstacle
+p_move = ocp.parameter(2)
+r_move = 1
+# Add a constraint that the car cannot come close to the obstacle
+ocp.subject_to(sumsqr(p-p_move)>=r_move**2)
+
 # Objective functions
 # TODO: tune the weightings of the different objectives
 ocp.add_objective(sumsqr(ocp.T))
@@ -107,6 +115,12 @@ ocp.set_value(X_0,current_X)
 #Specify the final value for the states and set
 final_X = vertcat(10,10,0,pi/4)
 ocp.subject_to(ocp.at_tf(X)==final_X)
+
+# Set the initial value for the moving obstacle
+current_move = vertcat(7,8)
+ocp.set_value(p_move,current_move)
+
+p_hist[0,:]=(current_move[0],current_move[1])
 
 #%% Solve the problem and extract the solution, then plot the outputs over time
 sol = ocp.solve()
@@ -161,6 +175,7 @@ size_array = np.size(x_sol)
 ts = np.linspace(0,2*pi,1000)
 
 ax7.plot(p0[0]+r0*cos(ts),p0[1]+r0*sin(ts),'b')
+ax7.plot(current_move[0]+r_move*cos(ts),current_move[1]+r_move*sin(ts),'r')
 
 for k in range(size_array):
 
@@ -194,6 +209,13 @@ for i in range(Nsim):
     # Set the parameter X0 to the new current_X
     ocp.set_value(X_0, current_X)
 
+    # Calculate the new position of the moving obstacle
+    current_move[0]=current_move[0]+0.25
+    current_move[1]=current_move[1]-0.25
+
+    # Set the parameter p_move to the new current_move
+    ocp.set_value(p_move, current_move)
+
     # Solve the optimization problem
     sol = ocp.solve()
 
@@ -213,6 +235,9 @@ for i in range(Nsim):
     theta_hist[i+1,:]   = theta_sol
     delta_hist[i+1,:]   = delta_sol
     a_hist[i+1,:]       = a_sol
+
+    #Save the position of the moving obstacle for plotting later
+    p_hist[i+1,:] = [current_move[0],current_move[1]]
 
     #The previous solution makes a good initial guess for the next iteration, so put that here
     ocp.set_initial(x, x_sol)
