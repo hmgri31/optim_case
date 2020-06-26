@@ -16,7 +16,7 @@ from casadi import *
 
 L = 1.5 #Define what the length of the car is, as this will affect the turning circle.
 
-Nsim    = 50            # how much samples to simulate
+Nsim    = 20            # how much samples to simulate
 nx = 4                  # x, y, v, theta (angle bicycle)
 nu = 2                  # a, delta (angle wheel)
 Tf = 5                  # Control horizon [s]
@@ -221,6 +221,10 @@ for i in range(Nsim):
     ocp.set_initial(theta, theta_sol)
     ocp.set_initial(delta, delta_sol)
     ocp.set_initial(a, a_sol)
+
+#%% Plot the output using the values from the history logs
+
+# TODO: Plot the data using the _hist logs of data
 
 
 
