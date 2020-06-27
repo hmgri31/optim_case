@@ -19,7 +19,7 @@ L = 1.5 #Define what the length of the car is, as this will affect the turning c
 Nsim    = 50           # how much samples to simulate
 nx = 4                  # x, y, v, theta (angle bicycle)
 nu = 2                  # a, delta (angle wheel)
-Tf = 5                  # Control horizon [s]
+Tf = 2                  # Control horizon [s]
 Nhor = 20              #number of control intervals
 dt = Tf/Nhor            #sample time
 
@@ -72,11 +72,11 @@ ocp.set_initial(a,      0.5)
 ocp.set_initial(delta,  0)
 
 # Path constraints
-ocp.subject_to(0 <= (v <= 8.33))
+ocp.subject_to(0 <= (v <= 5))
 ocp.subject_to(-2 <= (x <= 12))
 ocp.subject_to(-2 <= (y <= 12))
 
-ocp.subject_to(-10 <= (a <= 10))
+ocp.subject_to(-5 <= (a <= 5))
 ocp.subject_to(-pi/6 <= (delta <= pi/6))
 
 # Add a stationary objects along the path
@@ -93,11 +93,16 @@ r_move = 1
 # Add a constraint that the car cannot come close to the obstacle
 ocp.subject_to(sumsqr(p-p_move)>=r_move**2)
 
+final_X_x = 10
+final_X_y = 10
+
 # Objective functions
 # TODO: tune the weightings of the different objectives
+# Currently the problem is that the car wont reach the destination because the control horizon makes it hit target in the last control step
 ocp.add_objective(sumsqr(ocp.T))
 ocp.add_objective(ocp.sum(0.5*sumsqr(a),grid='control'))
 ocp.add_objective(ocp.sum(5*sumsqr(delta),grid='control'))
+ocp.add_objective(ocp.sum(sumsqr(final_X_x-p[0])+sumsqr(final_X_y-p[1])))
 #ocp.add_objective(-ocp.sum(sumsqr(v),grid='control'))
 
 # Pick a solution method
@@ -113,8 +118,10 @@ current_X = vertcat(0,0,0,pi/4)
 ocp.set_value(X_0,current_X)
 
 #Specify the final value for the states and set
-final_X = vertcat(10,10,0,pi/4)
+final_X = vertcat(final_X_x,final_X_y,0,pi/4)
 ocp.subject_to(ocp.at_tf(X)==final_X)
+
+
 
 # Set the initial value for the moving obstacle
 current_move = vertcat(7,8)
