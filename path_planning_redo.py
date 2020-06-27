@@ -16,7 +16,7 @@ from casadi import *
 
 L = 1.5 #Define what the length of the car is, as this will affect the turning circle.
 
-Nsim    = 20            # how much samples to simulate
+Nsim    = 50           # how much samples to simulate
 nx = 4                  # x, y, v, theta (angle bicycle)
 nu = 2                  # a, delta (angle wheel)
 Tf = 5                  # Control horizon [s]
