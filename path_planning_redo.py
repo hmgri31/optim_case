@@ -16,7 +16,7 @@ from casadi import *
 
 L = 1.5 #Define what the length of the car is, as this will affect the turning circle.
 
-Nsim    = 50           # how much samples to simulate
+Nsim    = 30           # how much samples to simulate
 nx = 4                  # x, y, v, theta (angle bicycle)
 nu = 2                  # a, delta (angle wheel)
 Tf = 2                  # Control horizon [s]
@@ -254,10 +254,47 @@ for i in range(Nsim):
     ocp.set_initial(delta, delta_sol)
     ocp.set_initial(a, a_sol)
 
-#%% Plot the output using the values from the history logs
+#%% Plot the output as an animation
 
-# TODO: Plot the data using the _hist logs of data
+plt.ion() #turn the interactive plot on; comment out this line if you don't want an interactive plot
+if plt.isinteractive():
+  fig3, ax8 = plt.subplots(1, 1)
+  plt.ion()
+  ax8.set_xlabel("X [m]")
+  ax8.set_ylabel("Y [m]")
+  ax8.set_xlim([-1,12])
+  ax8.set_ylim([-1,12])
+  ax8.set_aspect('equal', adjustable='box')
+  ts = np.linspace(0, 2 * pi, 1000)
+  ax8.plot(p0[0] + r0 * cos(ts), p0[1] + r0 * sin(ts), 'r-')
+  for k in range(len(x_hist)):
+      cart_x_pos_k    = x_hist[k,0]
+      cart_y_pos_k    = y_hist[k,0]
+      theta_k         = theta_hist[k,0]
 
+      # TODO: Change this to the position of the moving obstacle
+      p0_x_k = p_hist[k,0]
+      p0_y_k = p_hist[k,1]
+
+      #Set the color scale
+      color_point_k= 3*[0.95*(1-float(k)/Nsim)] #Color scale for the car
+      scale = [0.5,0.5,0.5] #Set how much lighter you want the arrows to be
+      color_car_k = np.multiply(scale,color_point_k)
+
+      # Plot the square to represent the car
+      ax8.plot(cart_x_pos_k, cart_y_pos_k, marker = (4,0,theta_k*(180/pi)), markersize = 10, color = color_car_k)
+      # Plot the triangle to show the orientation of the car
+      orientation_x_k = cart_x_pos_k+cos(theta_k)
+      orientation_y_k = cart_y_pos_k+sin(theta_k)
+      ax8.plot(orientation_x_k, orientation_y_k, marker = (3,0,-90+theta_k*(180/pi)), markersize = 5, color = color_point_k)
+      # Plot the line connecting the car and its orientation.
+      ax8.plot([cart_x_pos_k,orientation_x_k],[cart_y_pos_k,orientation_y_k],"-", linewidth = 1.5, color = color_point_k)
+      # Plot the obstacle
+      ax8.plot(p_hist[k-1,0] + r0 * cos(ts), p_hist[k-1,1] + r0 * sin(ts), 'w-')
+      ax8.plot(p0_x_k + r0 * cos(ts), p0_y_k + r0 * sin(ts), 'r-')
+
+      plt.pause(dt)
+plt.show(block=True)
 
 
 
