@@ -72,16 +72,16 @@ ocp.set_initial(a,      0.5)
 ocp.set_initial(delta,  0)
 
 # Path constraints
-ocp.subject_to(0 <= (v <= 5))
+ocp.subject_to(0 <= (v <= 2))
 ocp.subject_to(-2 <= (x <= 12))
 ocp.subject_to(-2 <= (y <= 12))
 
-ocp.subject_to(-5 <= (a <= 5))
+ocp.subject_to(-2 <= (a <= 2))
 ocp.subject_to(-pi/6 <= (delta <= pi/6))
 
 # Add a stationary objects along the path
 # TODO: clearly the current solution isn't taking into account the obstacle, so fix this
-p0 = vertcat(6,6)
+p0 = vertcat(4,4.5)
 r0 = 1
 
 p = vertcat(x,y)
@@ -102,7 +102,7 @@ final_X_y = 10
 ocp.add_objective(sumsqr(ocp.T))
 ocp.add_objective(ocp.sum(0.5*sumsqr(a),grid='control'))
 ocp.add_objective(ocp.sum(5*sumsqr(delta),grid='control'))
-ocp.add_objective(ocp.sum(sumsqr(final_X_x-p[0])+sumsqr(final_X_y-p[1])))
+ocp.add_objective(ocp.sum(sumsqr(sqrt((final_X_x-p[0])**2+(final_X_y-p[1])**2))))
 #ocp.add_objective(-ocp.sum(sumsqr(v),grid='control'))
 
 # Pick a solution method
@@ -124,7 +124,7 @@ ocp.subject_to(ocp.at_tf(X)==final_X)
 
 
 # Set the initial value for the moving obstacle
-current_move = vertcat(7,8)
+current_move = vertcat(6,8)
 ocp.set_value(p_move,current_move)
 
 p_hist[0,:]=(current_move[0],current_move[1])
@@ -217,8 +217,8 @@ for i in range(Nsim):
     ocp.set_value(X_0, current_X)
 
     # Calculate the new position of the moving obstacle
-    current_move[0]=current_move[0]+0.25
-    current_move[1]=current_move[1]-0.25
+    current_move[0]=current_move[0]+0.05
+    current_move[1]=current_move[1]-0.05
 
     # Set the parameter p_move to the new current_move
     ocp.set_value(p_move, current_move)
@@ -293,7 +293,7 @@ if plt.isinteractive():
       ax8.plot(p_hist[k-1,0] + r0 * cos(ts), p_hist[k-1,1] + r0 * sin(ts), 'w-')
       ax8.plot(p0_x_k + r0 * cos(ts), p0_y_k + r0 * sin(ts), 'r-')
 
-      plt.pause(dt)
+      plt.pause(dt/10)
 plt.show(block=True)
 
 
