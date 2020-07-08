@@ -16,7 +16,7 @@ from casadi import *
 
 L = 1.5 #Define what the length of the car is, as this will affect the turning circle.
 
-Nsim    = 30           # how much samples to simulate
+Nsim    = 50           # how much samples to simulate
 nx = 4                  # x, y, v, theta (angle bicycle)
 nu = 2                  # a, delta (angle wheel)
 Tf = 2                  # Control horizon [s]
@@ -81,7 +81,7 @@ ocp.subject_to(-pi/6 <= (delta <= pi/6))
 
 # Add a stationary objects along the path
 # TODO: clearly the current solution isn't taking into account the obstacle, so fix this
-p0 = vertcat(4,4.5)
+p0 = vertcat(4,3.5)
 r0 = 1
 
 p = vertcat(x,y)
@@ -99,10 +99,10 @@ final_X_y = 10
 # Objective functions
 # TODO: tune the weightings of the different objectives
 # Currently the problem is that the car wont reach the destination because the control horizon makes it hit target in the last control step
-ocp.add_objective(sumsqr(ocp.T))
-ocp.add_objective(ocp.sum(0.5*sumsqr(a),grid='control'))
-ocp.add_objective(ocp.sum(5*sumsqr(delta),grid='control'))
-ocp.add_objective(ocp.sum(sumsqr(sqrt((final_X_x-p[0])**2+(final_X_y-p[1])**2))))
+#ocp.add_objective(ocp.T)
+ocp.add_objective(ocp.integral(0.5*sumsqr(a),grid='control'))
+ocp.add_objective(ocp.integral(5*sumsqr(delta),grid='control'))
+ocp.add_objective(ocp.integral(10*(sumsqr(sqrt((final_X_x-p[0])**2+(final_X_y-p[1])**2)))))
 #ocp.add_objective(-ocp.sum(sumsqr(v),grid='control'))
 
 # Pick a solution method
@@ -124,7 +124,7 @@ ocp.subject_to(ocp.at_tf(X)==final_X)
 
 
 # Set the initial value for the moving obstacle
-current_move = vertcat(6,8)
+current_move = vertcat(7,7.5)
 ocp.set_value(p_move,current_move)
 
 p_hist[0,:]=(current_move[0],current_move[1])
@@ -169,7 +169,7 @@ ax5.set_ylabel('a [m/s^2]')
 ax6.plot(t_sol,delta_sol)
 ax6.set_xlabel('t [s]')
 ax6.set_ylabel('delta [rad]')
-ax6.set_ylim(-0.5,0.5)
+#ax6.set_ylim(-0.5,0.5)
 
 plt.subplots_adjust(hspace=1)
 
