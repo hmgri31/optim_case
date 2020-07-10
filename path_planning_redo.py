@@ -221,8 +221,9 @@ for i in range(Nsim):
     t_sol, delta_sol = sol.sample(delta, grid='control')
     t_sol, a_sol     = sol.sample(a,     grid='control')
 
-    # TODO: Every problem solves from time zero as a free time problem, adjust this so that time is absolute not relative
-    time_hist[i+1,:]    = t_sol
+    t_begin = time_hist[i,1]*np.ones(Nhor+1)
+
+    time_hist[i+1,:]    = t_sol + t_begin
     x_hist[i+1,:]       = x_sol
     y_hist[i+1,:]       = y_sol
     v_hist[i+1,:]       = v_sol
