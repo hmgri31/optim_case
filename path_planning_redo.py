@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sat Jun 20 14:42:02 2020
 
-@author: JiNzo
-"""
 
 #%% Import packages
 from rockit import *
@@ -19,9 +15,7 @@ L = 1.5 #Define what the length of the car is, as this will affect the turning c
 Nsim    = 50           # how much samples to simulate
 nx = 4                  # x, y, v, theta (angle bicycle)
 nu = 2                  # a, delta (angle wheel)
-Tf = 2                  # Control horizon [s]
 Nhor = 20              #number of control intervals
-dt = Tf/Nhor            #sample time
 
 #Initialise the matrices for logging variables
 time_hist      = np.zeros((Nsim+1, Nhor+1))
@@ -80,7 +74,6 @@ ocp.subject_to(-2 <= (a <= 2))
 ocp.subject_to(-pi/6 <= (delta <= pi/6))
 
 # Add a stationary objects along the path
-# TODO: clearly the current solution isn't taking into account the obstacle, so fix this
 p0 = vertcat(4,3.5)
 r0 = 1
 
@@ -97,13 +90,10 @@ final_X_x = 10
 final_X_y = 10
 
 # Objective functions
-# TODO: tune the weightings of the different objectives
-# Currently the problem is that the car wont reach the destination because the control horizon makes it hit target in the last control step
 #ocp.add_objective(ocp.T)
 ocp.add_objective(ocp.integral(0.5*sumsqr(a),grid='control'))
 ocp.add_objective(ocp.integral(5*sumsqr(delta),grid='control'))
 ocp.add_objective(ocp.integral(10*(sumsqr(sqrt((final_X_x-p[0])**2+(final_X_y-p[1])**2)))))
-#ocp.add_objective(-ocp.sum(sumsqr(v),grid='control'))
 
 # Pick a solution method
 options = {"ipopt": {"print_level": 0}}
@@ -120,8 +110,6 @@ ocp.set_value(X_0,current_X)
 #Specify the final value for the states and set
 final_X = vertcat(final_X_x,final_X_y,0,pi/4)
 ocp.subject_to(ocp.at_tf(X)==final_X)
-
-
 
 # Set the initial value for the moving obstacle
 current_move = vertcat(7,7.5)
@@ -169,7 +157,6 @@ ax5.set_ylabel('a [m/s^2]')
 ax6.plot(t_sol,delta_sol)
 ax6.set_xlabel('t [s]')
 ax6.set_ylabel('delta [rad]')
-#ax6.set_ylim(-0.5,0.5)
 
 plt.subplots_adjust(hspace=1)
 
@@ -234,7 +221,7 @@ for i in range(Nsim):
     t_sol, delta_sol = sol.sample(delta, grid='control')
     t_sol, a_sol     = sol.sample(a,     grid='control')
 
-    # TODO: The isn't upgrading to the absolute time at the moment, just the relative time
+    # TODO: Every problem solves from time zero as a free time problem, adjust this so that time is absolute not relative
     time_hist[i+1,:]    = t_sol
     x_hist[i+1,:]       = x_sol
     y_hist[i+1,:]       = y_sol
@@ -272,7 +259,6 @@ if plt.isinteractive():
       cart_y_pos_k    = y_hist[k,0]
       theta_k         = theta_hist[k,0]
 
-      # TODO: Change this to the position of the moving obstacle
       p0_x_k = p_hist[k,0]
       p0_y_k = p_hist[k,1]
 
@@ -293,7 +279,7 @@ if plt.isinteractive():
       ax8.plot(p_hist[k-1,0] + r0 * cos(ts), p_hist[k-1,1] + r0 * sin(ts), 'w-')
       ax8.plot(p0_x_k + r0 * cos(ts), p0_y_k + r0 * sin(ts), 'r-')
 
-      plt.pause(dt/10)
+      plt.pause(0.1/10)
 plt.show(block=True)
 
 
