@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-
-
 #%% Import packages
 from rockit import *
 import matplotlib.pyplot as plt
@@ -82,7 +79,10 @@ ocp.subject_to(sumsqr(p-p0)>=r0**2)
 
 # Now input a moving obstacle
 p_move = ocp.parameter(2)
-r_move = 1
+r_move = 1 #Radius of the buffer around the vehicle.
+v_move = 1 #Velocity of the moving obstacle [m/s]
+theta_move = -pi/4 #angle of the the moving obstacle
+
 # Add a constraint that the car cannot come close to the obstacle
 ocp.subject_to(sumsqr(p-p_move)>=r_move**2)
 
@@ -112,7 +112,7 @@ final_X = vertcat(final_X_x,final_X_y,0,pi/4)
 ocp.subject_to(ocp.at_tf(X)==final_X)
 
 # Set the initial value for the moving obstacle
-current_move = vertcat(7,7.5)
+current_move = vertcat(4,10)
 ocp.set_value(p_move,current_move)
 
 p_hist[0,:]=(current_move[0],current_move[1])
@@ -204,8 +204,8 @@ for i in range(Nsim):
     ocp.set_value(X_0, current_X)
 
     # Calculate the new position of the moving obstacle
-    current_move[0]=current_move[0]+0.05
-    current_move[1]=current_move[1]-0.05
+    current_move[0]=current_move[0]+(v_move*(t_sol[1]-t_sol[0]))
+    current_move[1]=current_move[1]-(v_move*(t_sol[1]-t_sol[0]))
 
     # Set the parameter p_move to the new current_move
     ocp.set_value(p_move, current_move)
