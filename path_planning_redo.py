@@ -3,16 +3,27 @@ from rockit import *
 import matplotlib.pyplot as plt
 import numpy as np
 from casadi import *
+import pandas as pd
 
+
+#%% Predefine functions
+def path_predict(x_minus, x_now, y_minus, y_now, t_minus, t_now, dt):
+    # Calculate the velocity from previous points
+    v_x = (x_now - x_minus)/(t_now-t_minus)
+    v_y = (y_now - y_minus) /(t_now-t_minus)
+    #Use the velocity to predict the position at an instance in the future
+    x_fut = x_now + v_x*(dt)
+    y_fut = y_now + v_y*(dt)
+    return x_fut, y_fut
 
 #%% Setup the problem
 
 L = 1.5 #Define what the length of the car is, as this will affect the turning circle.
 
-Nsim    = 50           # how much samples to simulate
+Nsim    = 60           # how much samples to simulate
 nx = 4                  # x, y, v, theta (angle bicycle)
 nu = 2                  # a, delta (angle wheel)
-Nhor = 20              #number of control intervals
+Nhor = 30              #number of control intervals
 
 #Initialise the matrices for logging variables
 time_hist      = np.zeros((Nsim+1, Nhor+1))
@@ -24,6 +35,8 @@ a_hist         = np.zeros((Nsim+1, Nhor+1))
 delta_hist     = np.zeros((Nsim+1, Nhor+1))
 
 p_hist = np.zeros((Nsim+1, 2))
+p1_hist = np.zeros((Nsim+1, 2))
+p2_hist = np.zeros((Nsim+1, 2))
 
 #Initialise a matrix for plotting the position of the moving object
 
@@ -63,7 +76,7 @@ ocp.set_initial(a,      0.5)
 ocp.set_initial(delta,  0)
 
 # Path constraints
-ocp.subject_to(0 <= (v <= 2))
+ocp.subject_to(0 <= (v <= 3))
 ocp.subject_to(-2 <= (x <= 12))
 ocp.subject_to(-2 <= (y <= 12))
 
@@ -83,6 +96,10 @@ r_move = 1 #Radius of the buffer around the vehicle.
 v_move = 1 #Velocity of the moving obstacle [m/s]
 theta_move = -pi/4 #angle of the the moving obstacle
 
+# Add the moving obstacle in the future as a soft constraint.
+p_move_p1 = ocp.parameter(2)
+p_move_p2 = ocp.parameter(2)
+
 # Add a constraint that the car cannot come close to the obstacle
 ocp.subject_to(sumsqr(p-p_move)>=r_move**2)
 
@@ -94,6 +111,8 @@ final_X_y = 10
 ocp.add_objective(ocp.integral(0.5*sumsqr(a),grid='control'))
 ocp.add_objective(ocp.integral(5*sumsqr(delta),grid='control'))
 ocp.add_objective(ocp.integral(10*(sumsqr(sqrt((final_X_x-p[0])**2+(final_X_y-p[1])**2)))))
+# TODO: Add a soft-constraint here for avoiding the obstacle
+
 
 # Pick a solution method
 options = {"ipopt": {"print_level": 0}}
@@ -112,10 +131,18 @@ final_X = vertcat(final_X_x,final_X_y,0,pi/4)
 ocp.subject_to(ocp.at_tf(X)==final_X)
 
 # Set the initial value for the moving obstacle
-current_move = vertcat(4,10)
+current_move = vertcat(5,8)
 ocp.set_value(p_move,current_move)
 
+#Set the initial "future" values of the moving obstacle
+current_p1 = vertcat(5,8)
+ocp.set_value(p_move_p1,current_p1)
+current_p2 = vertcat(5,8)
+ocp.set_value(p_move_p2,current_p2)
+
 p_hist[0,:]=(current_move[0],current_move[1])
+p1_hist[0,:]=(current_p1[0],current_p1[1])
+p2_hist[0,:]=(current_p2[0],current_p2[1])
 
 #%% Solve the problem and extract the solution, then plot the outputs over time
 sol = ocp.solve()
@@ -210,6 +237,17 @@ for i in range(Nsim):
     # Set the parameter p_move to the new current_move
     ocp.set_value(p_move, current_move)
 
+    if i > 1:
+        # TODO: Implement the path prediction function and update the parameter
+        [current_p1[0],current_p1[1]] = path_predict(p_hist[i-1,0], p_hist[i,0], p_hist[i-1,1], p_hist[i,1],\
+                                                 time_hist[i-1,0], time_hist[i,0], t_sol[2])
+        [current_p2[0],current_p2[1]] = path_predict(p_hist[i-1,0], p_hist[i,0], p_hist[i-1,1], p_hist[i,1],\
+                                                 time_hist[i-1,0], time_hist[i,0], t_sol[3])
+
+        # Set the parameter values for current p1 and current p2
+        ocp.set_value(p_move_p1, current_p1)
+        ocp.set_value(p_move_p2, current_p2)
+
     # Solve the optimization problem
     sol = ocp.solve()
 
@@ -233,6 +271,12 @@ for i in range(Nsim):
 
     #Save the position of the moving obstacle for plotting later
     p_hist[i+1,:] = [current_move[0],current_move[1]]
+    if i <= 1:
+        p1_hist[i+1,:] = [current_move[0],current_move[1]]
+        p2_hist[i+1,:] = [current_move[0],current_move[1]]
+    else:
+        p1_hist[i+1, :] = [current_p1[0], current_p1[1]]
+        p2_hist[i+1, :] = [current_p2[0], current_p2[1]]
 
     #The previous solution makes a good initial guess for the next iteration, so put that here
     ocp.set_initial(x, x_sol)
@@ -281,7 +325,27 @@ if plt.isinteractive():
       ax8.plot(p0_x_k + r0 * cos(ts), p0_y_k + r0 * sin(ts), 'r-')
 
       plt.pause(0.1/10)
-plt.show(block=True)
+plt.show(block=False)
+plt.ioff()
 
+#%% Pandas dataframe
 
+#Add the first row of time_hist, x_hist, and y_hist into their own pd.DataFrame
+t_data = pd.DataFrame(time_hist)
+x_data = pd.DataFrame(x_hist)
+y_data = pd.DataFrame(y_hist)
+p_x_data = pd.DataFrame(p_hist[:,0])
+p_y_data = pd.DataFrame(p_hist[:,1])
+p1_x_data = pd.DataFrame(p1_hist[:,0])
+p1_y_data = pd.DataFrame(p1_hist[:,1])
+p2_x_data = pd.DataFrame(p2_hist[:,0])
+p2_y_data = pd.DataFrame(p2_hist[:,1])
 
+t_x_y = pd.DataFrame(zip(t_data.loc[:,0],x_data.loc[:,0],y_data.loc[:,0],p_x_data.loc[:,0],p_y_data.loc[:,0]))
+t_x_y = t_x_y.rename(columns={0: "Time",1: "X_Pos",2: "Y_Pos",3: "P_X_Pos",4: "P_Y_Pos" })
+print(t_x_y[0:Nsim+1])
+
+p_x_y = pd.DataFrame(zip(t_data.loc[:,0],p_x_data.loc[:,0],p_y_data.loc[:,0],p1_x_data.loc[:,0],\
+                         p1_y_data.loc[:,0],p2_x_data.loc[:,0],p2_y_data.loc[:,0]))
+p_x_y = p_x_y.rename(columns={0: "Time",1: "PX_Pos",2: "PY_Pos",3: "PX1_Pos",4: "PY1_Pos", 5: "PX2_Pos", 6: "PY2_Pos"})
+print(p_x_y[0:Nsim+1])
