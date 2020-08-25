@@ -49,6 +49,8 @@ y     = ocp.state()
 v     = ocp.state()
 theta = ocp.state()
 
+slack1 = ocp.state()
+
 delta = ocp.control()
 a     = ocp.control()
 
@@ -79,6 +81,8 @@ ocp.set_initial(delta,  0)
 ocp.subject_to(0 <= (v <= 3))
 ocp.subject_to(-2 <= (x <= 12))
 ocp.subject_to(-2 <= (y <= 12))
+
+ocp.subject_to(0 <= slack1)
 
 ocp.subject_to(-2 <= (a <= 2))
 ocp.subject_to(-pi/6 <= (delta <= pi/6))
@@ -111,8 +115,6 @@ final_X_y = 10
 ocp.add_objective(ocp.integral(0.5*sumsqr(a),grid='control'))
 ocp.add_objective(ocp.integral(5*sumsqr(delta),grid='control'))
 ocp.add_objective(ocp.integral(10*(sumsqr(sqrt((final_X_x-p[0])**2+(final_X_y-p[1])**2)))))
-# TODO: Add a soft-constraint here for avoiding the obstacle
-
 
 # Pick a solution method
 options = {"ipopt": {"print_level": 0}}
